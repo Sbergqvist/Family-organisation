@@ -48,20 +48,22 @@ npx http-server -p 8000
 # åbn http://localhost:8000
 ```
 
-### Læg den på nettet (GitHub Pages)
+### Læg den på nettet — kun for jer to
 
-1. Push denne mappe til GitHub.
-2. Gå til **Settings → Pages** i repoet.
-3. Under *Build and deployment* vælges **Deploy from a branch**, branch = jeres branch og mappe = `/ (root)`.
-4. Efter et par minutter ligger siden på `https://<brugernavn>.github.io/<repo>/`.
+Se **[DEPLOY.md](DEPLOY.md)**: Cloudflare Pages som hosting og Cloudflare Access som
+login foran. Begge dele er gratis, og kun de mailadresser I skriver på listen, kan
+åbne siden — man logger ind med en engangskode på mail. Derefter kan I gemme siden
+på hjemmeskærmen på hver jeres telefon.
 
-Derefter kan I begge åbne den på telefon og computer og gemme den på hjemmeskærmen.
+GitHub Pages virker også (**Settings → Pages** → *Deploy from a branch*, mappe `/ (root)`),
+men den slags sider er altid offentligt tilgængelige for enhver med adressen.
 
 ## Hvor gemmes data?
 
 Alt gemmes i browserens `localStorage` på den enhed, I bruger. Det betyder:
 
-- Ingen data forlader jeres enhed, og der er ikke brug for login.
+- Ingen data forlader jeres enhed. Selv hvis siden ligger på en offentlig adresse,
+  ser fremmede kun en tom plan — jeres punkter findes kun lokalt hos jer.
 - **Planen synkroniserer ikke automatisk mellem to enheder.** Under *Indstillinger* kan I
   eksportere alt til en JSON-fil og importere den på den anden enhed.
 - Rydder man browserens websteds-data, forsvinder planen — tag en eksport nu og da.
@@ -74,6 +76,7 @@ bliver for besværlig i hverdagen.
 
 ```
 index.html            Side og dialog
+_headers              Sikkerhedsheaders til Cloudflare Pages
 assets/styles.css     Tema, layout og responsivt design
 assets/js/utils.js    Dato- og DOM-hjælpefunktioner
 assets/js/store.js    Datamodel, lagring og gentagelses-logik
