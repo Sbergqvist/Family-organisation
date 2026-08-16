@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Familieplan</title>
+<meta name="description" content="Uge- og månedsplan med to-do og indkøbsliste for to personer.">
+<meta name="theme-color" content="#3b6ea5">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🗓️</text></svg>">
+<link rel="stylesheet" href="assets/styles.css">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar__brand">
+    <span class="topbar__logo" aria-hidden="true">🗓️</span>
+    <span class="topbar__title">Familieplan</span>
+  </div>
+
+  <nav class="tabs" id="tabs" aria-label="Hovedmenu">
+    <button class="tab" data-view="week" type="button">Uge</button>
+    <button class="tab" data-view="month" type="button">Måned</button>
+    <button class="tab" data-view="todo" type="button">To-do</button>
+    <button class="tab" data-view="shopping" type="button">Indkøb</button>
+    <button class="tab" data-view="settings" type="button">Indstillinger</button>
+  </nav>
+
+  <button class="btn btn--primary topbar__add" id="globalAdd" type="button">+ Ny</button>
+</header>
+
+<main class="main" id="viewRoot" aria-live="polite"></main>
+
+<!-- Dialog til oprettelse/redigering af punkter -->
+<div class="modal" id="modal" hidden>
+  <div class="modal__backdrop" data-close="1"></div>
+  <div class="modal__panel" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div class="modal__head">
+      <h2 id="modalTitle">Nyt punkt</h2>
+      <button class="icon-btn" type="button" data-close="1" aria-label="Luk">✕</button>
+    </div>
+    <form id="itemForm" class="form">
+      <input type="hidden" name="id">
+
+      <label class="field">
+        <span class="field__label">Titel</span>
+        <input class="input" name="title" required maxlength="120" placeholder="Fx “Hent børn kl. 15”" autocomplete="off">
+      </label>
+
+      <div class="field-row">
+        <label class="field">
+          <span class="field__label">Type</span>
+          <select class="input" name="type">
+            <option value="task">Opgave</option>
+            <option value="event">Aftale</option>
+          </select>
+        </label>
+        <label class="field">
+          <span class="field__label">Ansvarlig</span>
+          <select class="input" name="assignee" id="assigneeSelect"></select>
+        </label>
+      </div>
+
+      <div class="field-row">
+        <label class="field">
+          <span class="field__label">Dato</span>
+          <input class="input" type="date" name="date">
+        </label>
+        <label class="field">
+          <span class="field__label">Tidspunkt</span>
+          <input class="input" type="time" name="time">
+        </label>
+      </div>
+
+      <div class="field-row">
+        <label class="field">
+          <span class="field__label">Gentagelse</span>
+          <select class="input" name="repeat">
+            <option value="none">Ingen</option>
+            <option value="daily">Hver dag</option>
+            <option value="weekly">Hver uge</option>
+            <option value="biweekly">Hver 2. uge</option>
+            <option value="monthly">Hver måned</option>
+            <option value="yearly">Hvert år</option>
+          </select>
+        </label>
+        <label class="field">
+          <span class="field__label">Prioritet</span>
+          <select class="input" name="priority">
+            <option value="normal">Normal</option>
+            <option value="high">Vigtig</option>
+            <option value="low">Lav</option>
+          </select>
+        </label>
+      </div>
+
+      <label class="field">
+        <span class="field__label">Noter</span>
+        <textarea class="input" name="notes" rows="3" placeholder="Valgfrit"></textarea>
+      </label>
+
+      <div class="form__actions">
+        <button class="btn btn--danger" type="button" id="deleteItem" hidden>Slet</button>
+        <span class="spacer"></span>
+        <button class="btn" type="button" data-close="1">Annullér</button>
+        <button class="btn btn--primary" type="submit">Gem</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="toast" id="toast" hidden></div>
+
+<script src="assets/js/utils.js"></script>
+<script src="assets/js/store.js"></script>
+<script src="assets/js/render.js"></script>
+<script src="assets/js/views/week.js"></script>
+<script src="assets/js/views/month.js"></script>
+<script src="assets/js/views/todo.js"></script>
+<script src="assets/js/views/shopping.js"></script>
+<script src="assets/js/views/settings.js"></script>
+<script src="assets/js/app.js"></script>
+</body>
+</html>
