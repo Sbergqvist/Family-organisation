@@ -42,36 +42,90 @@ Siden virker nu — men er offentlig indtil trin 2 er klaret. Fortsæt med det s
 
 ## Trin 2 — Sæt login foran med Cloudflare Access
 
-1. Vælg **Zero Trust** i menuen til venstre.
-2. Første gang skal der vælges en plan: vælg **Free**. Cloudflare beder om et
-   betalingskort for at oprette teamet, men gratisplanen trækker ikke penge.
-   Vælg samtidig et *team name* — det bliver til `<teamnavn>.cloudflareaccess.com`,
-   og det er dét domæne, loginsiden ligger på.
-3. Gå til **Access → Applications → Add an application → Self-hosted**.
-4. Udfyld:
+**Start inde i Pages-projektet — ikke i Zero Trust.** Det er her de fleste går i stå:
+opretter man en Access-applikation i hånden, skal man vælge domænet i en liste, og
+`pages.dev` står ikke på den. Listen viser kun domæner, I selv har i Cloudflare, og
+`pages.dev` tilhører Cloudflare. Derfor har Pages en knap, der laver applikationen
+for jer med det rigtige værtsnavn.
 
-   | Felt | Værdi |
-   | --- | --- |
-   | Application name | `Familieplan` |
-   | Session duration | `1 month` — så slipper I for at logge ind hele tiden |
-   | Public hostname | Subdomain: `familieplan`, Domain: `pages.dev` |
+### 2a. Tænd for det fra Pages
 
-5. Under **Identity providers** slås **One-time PIN** til (koden på mail).
-   I behøver ikke andre login-metoder.
-6. Videre til **Policies** → **Add a policy**:
+Gå til **Workers & Pages → familieplan → Settings**, find afsnittet
+**Access policy**, og klik **Enable access policy**. (På nogle konti ligger knappen
+under fanen *Manage* i stedet.)
 
-   | Felt | Værdi |
-   | --- | --- |
-   | Policy name | `Os to` |
-   | Action | `Allow` |
-   | Include → Selector | `Emails` |
-   | Value | jeres to mailadresser, én ad gangen |
+Første gang bliver I bedt om at oprette et Zero Trust-team:
 
-7. **Save**.
+- Vælg planen **Free**. Cloudflare beder om et betalingskort for at oprette teamet,
+  men gratisplanen trækker ikke penge. Den dækker 50 brugere; I skal bruge to.
+- Vælg et *team name*. Det bliver til `<teamnavn>.cloudflareaccess.com`, som er
+  det domæne, jeres loginskærm ligger på.
 
-Vent et minut, og åbn så adressen i et privat browservindue. Kommer der en
-loginskærm fra Cloudflare, virker det. Prøv eventuelt med en tredje mailadresse —
-den skal blive afvist.
+Cloudflare opretter nu en Access-applikation for jer.
+
+### 2b. Få den til at dække selve siden — ikke kun preview-adresserne
+
+Som standard dækker applikationen `*.familieplan.pages.dev`, altså de tilfældige
+preview-adresser, men **ikke** `familieplan.pages.dev`, som er den I bruger.
+
+Gå til **Zero Trust → Access → Applications**, åbn applikationen, og find
+**Public hostname**. Der står en stjerne (`*`) i feltet **Subdomain**.
+
+**Slet stjernen**, så feltet indeholder `familieplan` og domænet er `pages.dev`.
+Gem. Nu er selve siden låst.
+
+Vil I have begge dele dækket, tilføjer I bagefter endnu et public hostname (eller
+en applikation mere) med `*` som subdomain. Alternativt kan preview-udrulninger
+slås fra under *Pages → Settings → Builds*.
+
+### 2c. Vælg hvem der må komme ind
+
+I applikationen: fanen **Policies** → rediger den politik, Cloudflare lavede, eller
+tilføj en ny:
+
+| Felt | Værdi |
+| --- | --- |
+| Policy name | `Os to` |
+| Action | `Allow` |
+| Include → Selector | **`Emails`** |
+| Value | jeres to mailadresser — tilføj dem én ad gangen |
+
+Vigtigt: står der `Everyone` under *Include*, kan alle med adressen komme ind.
+Det skal udskiftes med `Emails`.
+
+### 2d. Login med kode på mail
+
+Under applikationens **Login methods** skal **One-time PIN** være slået til.
+Er listen tom, tilføjes den under **Zero Trust → Integrations → Identity
+providers → Add new → One-time PIN** (på ældre konti: *Settings → Authentication*).
+Der skal ikke konfigureres noget — den virker som den er.
+
+Sæt samtidig **Session duration** til `1 month`, så I ikke skal logge ind hele tiden.
+
+### 2e. Prøv det af
+
+Åbn adressen i et privat browservindue. Der skal komme en loginskærm: skriv din
+mail, tryk **Send me a code**, og indtast de seks cifre fra mailen.
+
+Prøv gerne med en tredje mailadresse — den skal blive afvist.
+
+### Når det driller
+
+**“Jeg kan ikke vælge pages.dev i Domain-listen.”** Det kan man heller ikke.
+Brug knappen inde i Pages-projektet (2a) i stedet for at oprette applikationen i hånden.
+
+**“Alle kan stadig komme ind på siden.”** Enten dækker applikationen kun `*`
+(preview-adresserne) og ikke selve værtsnavnet — se 2b — eller også står politikken
+til `Everyone` i stedet for `Emails`.
+
+**“Der kommer ingen mail med koden.”** Kig i spam. Koden udløber efter 10 minutter.
+Filtrerer jeres mail hårdt, så tillad afsenderen `noreply@notify.cloudflare.com`.
+
+**“Skal jeg virkelig give kortoplysninger?”** Ja, til at oprette Zero Trust-teamet.
+Free-planen koster ikke noget, og der trækkes ikke penge for to brugere.
+
+**Og API'et?** `/api/sync` ligger på samme værtsnavn som siden, så den samme
+applikation dækker den automatisk. Der skal ikke laves en regel til den.
 
 ---
 
@@ -156,10 +210,9 @@ skulle blive slettet ved et uheld — databasen har ikke nogen fortrydelsesknap.
 **Eget domæne.** Har I et domæne i forvejen, kan I sætte det på under
 *Pages → Custom domains* og bruge det i Access-appen i stedet for `pages.dev`.
 
-**Preview-udgaver.** Cloudflare laver også en adresse pr. commit. De ligger på
-underdomæner af `familieplan.pages.dev` og er ikke dækket af reglen ovenfor.
-Slå dem fra under **Pages → Settings → Builds → Preview deployments → Disable**,
-eller lav en tilsvarende Access-regel for `*.familieplan.pages.dev`.
+**Preview-udgaver.** Cloudflare laver også en adresse pr. commit under
+`*.familieplan.pages.dev`. Er de ikke dækket (se trin 2b), kan de slås fra under
+**Pages → Settings → Builds → Preview deployments**.
 
 **Repoet er stadig offentligt.** Koden kan alle se — det er kun siden, der er
 låst. Vil du også skjule koden, kan du gøre repoet privat under
