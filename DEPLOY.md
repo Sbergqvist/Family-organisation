@@ -19,8 +19,19 @@ Regn med 20-30 minutter første gang.
 1. Opret en gratis konto på <https://dash.cloudflare.com> (eller log ind).
 2. Vælg **Compute (Workers & Pages)** i menuen til venstre → **Create** → fanen
    **Pages** → **Connect to Git**.
+
+   > **Det skal være et Pages-projekt, ikke et Workers-projekt.** Cloudflare
+   > foreslår gerne Workers, når man importerer fra Git, og de to ting bygger
+   > koden forskelligt: denne side bruger `functions/`-mappen, som kun Pages
+   > forstår. Vælger man Workers, fejler byggeriet med *“Missing entry-point to
+   > Worker script”*. Kendetegnet på et Pages-projekt er, at byggeindstillingerne
+   > har et felt til **Build output directory**.
+
 3. Godkend Cloudflare i GitHub, og vælg repoet **Family-organisation**.
    Du kan nøjes med at give adgang til netop dette repo.
+
+   > Har I allerede et Workers-projekt med det navn, I vil bruge, så slet det
+   > først — ellers er navnet optaget.
 4. Udfyld byggeindstillingerne — der er ingen byggeproces, så de fleste felter er tomme:
 
    | Felt | Værdi |
