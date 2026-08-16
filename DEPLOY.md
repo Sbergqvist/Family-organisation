@@ -137,8 +137,19 @@ lille funktion i `functions/api/sync.js`, som Pages selv finder og kører på
 `/api/sync`. Fordi Access sidder foran hele domænet, er API'et beskyttet af samme
 login — der skal ikke sættes brugerstyring op.
 
-Gratisplanen dækker rigeligt: 5 GB database og 100.000 kald om dagen, hvor I skal
-bruge nogle få hundrede.
+### Hvad koster det?
+
+Ingenting for to personer. Gratisplanen giver 100.000 kald til funktionen om dagen,
+5 millioner læste og 100.000 skrevne rækker om dagen, og 500 MB pr. database.
+
+Til sammenligning bruger I med to enheder, der står åbne hele dagen, omkring
+6.000 kald og under 100.000 læste rækker i døgnet — og en plan med tusindvis af
+punkter fylder nogle få megabyte. I er altså en faktor 10-50 fra den nærmeste grænse.
+
+Og vigtigst: **gratisplanen kan ikke give en regning.** Rammer man loftet, svarer
+databasen med en fejl indtil næste døgn — der bliver ikke trukket penge. Det kræver
+et aktivt valg om at opgradere til Workers Paid ($5/md.) at komme til at betale
+noget, og det har I ikke brug for.
 
 ### 3a. Opret databasen
 
