@@ -4,9 +4,14 @@
 
   var U = global.U;
   var KEY = 'familieplan.v1';
+  var DIRTY_KEY = 'familieplan.dirty';
   var listeners = [];
 
   var state = null;
+
+  /* Nøgler ("item:abc") på rækker der er ændret her, men endnu ikke sendt til serveren.
+     Listen ligger i localStorage, så ændringer lavet offline ikke går tabt. */
+  var dirty = {};
 
   function defaultState() {
     var monday = U.startOfWeek(U.today());
@@ -17,31 +22,144 @@
         b: { name: 'Min kone', color: '#b8577a' },
         shared: { name: 'Fælles', color: '#4f9a71' }
       },
+      /* Eksempler ved allerførste besøg. De har faste id'er med vilje: åbner den
+         anden enhed siden for første gang, laver den de samme rækker frem for
+         dubletter, og en redigering eller sletning et sted slår igennem begge steder. */
       items: [
         {
-          id: U.uid(), title: 'Ugeplanlægning sammen', notes: 'Gennemgå kalender, opgaver og indkøb for den kommende uge.',
+          id: 'seed-uge', title: 'Ugeplanlægning sammen', notes: 'Gennemgå kalender, opgaver og indkøb for den kommende uge.',
           type: 'event', assignee: 'shared', date: U.toISO(U.addDays(monday, 6)), time: '19:00',
           repeat: 'weekly', priority: 'normal', done: false, completed: {}, createdAt: Date.now()
         },
         {
-          id: U.uid(), title: 'Tømme skraldespand', notes: '',
+          id: 'seed-skrald', title: 'Tømme skraldespand', notes: '',
           type: 'task', assignee: 'a', date: U.toISO(U.addDays(monday, 1)), time: '',
           repeat: 'weekly', priority: 'normal', done: false, completed: {}, createdAt: Date.now()
         },
         {
-          id: U.uid(), title: 'Bestille tid til tandlæge', notes: '',
+          id: 'seed-tandlaege', title: 'Bestille tid til tandlæge', notes: '',
           type: 'task', assignee: 'b', date: '', time: '',
           repeat: 'none', priority: 'high', done: false, completed: {}, createdAt: Date.now()
         }
       ],
       shopping: [
-        { id: U.uid(), title: 'Mælk', done: false, createdAt: Date.now() },
-        { id: U.uid(), title: 'Kaffe', done: false, createdAt: Date.now() }
+        { id: 'seed-maelk', title: 'Mælk', done: false, createdAt: Date.now() },
+        { id: 'seed-kaffe', title: 'Kaffe', done: false, createdAt: Date.now() }
       ]
     };
   }
 
+  /* ---------- Ændringer der venter på at blive sendt ---------- */
+
+  function loadDirty() {
+    try {
+      dirty = JSON.parse(global.localStorage.getItem(DIRTY_KEY)) || {};
+    } catch (e) {
+      dirty = {};
+    }
+  }
+
+  function saveDirty() {
+    try {
+      global.localStorage.setItem(DIRTY_KEY, JSON.stringify(dirty));
+    } catch (e) { /* ignoreres */ }
+  }
+
+  function touch(kind, id) {
+    dirty[kind + ':' + id] = true;
+    saveDirty();
+  }
+
+  function isDirty(kind, id) {
+    return !!dirty[kind + ':' + id];
+  }
+
+  /* Alle ventende ændringer som de skal sendes. Findes rækken ikke længere
+     lokalt, er den slettet her — så sendes en gravsten i stedet for data. */
+  function pendingChanges() {
+    return Object.keys(dirty).map(function (key) {
+      var sep = key.indexOf(':');
+      var kind = key.slice(0, sep);
+      var id = key.slice(sep + 1);
+      var data = findRecord(kind, id);
+      return data
+        ? { kind: kind, id: id, data: data, deleted: false }
+        : { kind: kind, id: id, data: null, deleted: true };
+    });
+  }
+
+  /* Rydder kun de nøgler der rent faktisk blev sendt — nye ændringer lavet
+     imens kaldet var undervejs skal stadig med næste gang. */
+  function clearPending(changes) {
+    changes.forEach(function (c) { delete dirty[c.kind + ':' + c.id]; });
+    saveDirty();
+  }
+
+  function markAllDirty(extraIds) {
+    (extraIds || []).forEach(function (key) { dirty[key] = true; });
+    state.items.forEach(function (it) { dirty['item:' + it.id] = true; });
+    state.shopping.forEach(function (s) { dirty['shopping:' + s.id] = true; });
+    dirty['meta:people'] = true;
+    saveDirty();
+  }
+
+  function recordKeys() {
+    return state.items.map(function (it) { return 'item:' + it.id; })
+      .concat(state.shopping.map(function (s) { return 'shopping:' + s.id; }));
+  }
+
+  function findRecord(kind, id) {
+    if (kind === 'meta') return id === 'people' ? state.people : null;
+    var list = kind === 'item' ? state.items : kind === 'shopping' ? state.shopping : [];
+    for (var i = 0; i < list.length; i++) {
+      if (list[i].id === id) return list[i];
+    }
+    return null;
+  }
+
+  /* Skriver serverens rækker ind lokalt. Rækker vi selv har ændret og endnu ikke
+     har sendt, springes over — ellers ville vores egen ændring blive spist. */
+  function applyRemote(changes) {
+    var applied = 0;
+    changes.forEach(function (c) {
+      if (isDirty(c.kind, c.id)) return;
+      if (c.kind === 'meta') {
+        if (c.id === 'people' && c.data && !c.deleted) {
+          state.people = normalizePeople(c.data);
+          applied++;
+        }
+        return;
+      }
+      var list = c.kind === 'item' ? state.items : c.kind === 'shopping' ? state.shopping : null;
+      if (!list) return;
+
+      var index = -1;
+      for (var i = 0; i < list.length; i++) {
+        if (list[i].id === c.id) { index = i; break; }
+      }
+
+      if (c.deleted) {
+        if (index >= 0) { list.splice(index, 1); applied++; }
+        return;
+      }
+      if (!c.data) return;
+
+      var row = c.kind === 'item' ? normalizeItem(c.data) : normalizeShopping(c.data);
+      row.id = c.id;
+      if (index >= 0) list[index] = row; else list.push(row);
+      applied++;
+    });
+    if (applied) {
+      save();
+      listeners.forEach(function (fn) { fn(); });
+    }
+    return applied;
+  }
+
+  /* ---------- Indlæsning og lagring ---------- */
+
   function load() {
+    loadDirty();
     var raw = null;
     try { raw = global.localStorage.getItem(KEY); } catch (e) { raw = null; }
     if (!raw) {
@@ -58,40 +176,56 @@
     return state;
   }
 
+  /* Feltvis oprydning. Bruges både på gemte data og på rækker fra serveren,
+     så en enhed aldrig kan sende noget ind der vælter visningen. */
+  function normalizeItem(it) {
+    it = it || {};
+    return {
+      id: it.id || U.uid(),
+      title: String(it.title || '(uden titel)').slice(0, 200),
+      type: it.type === 'event' ? 'event' : 'task',
+      assignee: ['a', 'b', 'shared'].indexOf(it.assignee) >= 0 ? it.assignee : 'shared',
+      date: it.date || '',
+      time: it.time || '',
+      repeat: it.repeat || 'none',
+      priority: it.priority || 'normal',
+      done: !!it.done,
+      completed: it.completed && typeof it.completed === 'object' ? it.completed : {},
+      notes: String(it.notes || ''),
+      createdAt: it.createdAt || Date.now()
+    };
+  }
+
+  function normalizeShopping(s) {
+    s = s || {};
+    return {
+      id: s.id || U.uid(),
+      title: String(s.title || '').slice(0, 200),
+      done: !!s.done,
+      createdAt: s.createdAt || Date.now()
+    };
+  }
+
+  function normalizePeople(people) {
+    var base = defaultState().people;
+    var out = {};
+    ['a', 'b', 'shared'].forEach(function (k) {
+      var p = (people && people[k]) || base[k];
+      out[k] = { name: String(p.name || base[k].name).slice(0, 40), color: p.color || base[k].color };
+    });
+    return out;
+  }
+
   /* Gør indlæste data robuste mod manglende felter (fx fra en ældre version). */
   function migrate(data) {
     var base = defaultState();
     if (!data || typeof data !== 'object') return base;
-    data.version = 1;
-    data.people = data.people || base.people;
-    ['a', 'b', 'shared'].forEach(function (k) {
-      data.people[k] = data.people[k] || base.people[k];
-      data.people[k].name = data.people[k].name || base.people[k].name;
-      data.people[k].color = data.people[k].color || base.people[k].color;
-    });
-    data.items = Array.isArray(data.items) ? data.items : [];
-    data.items.forEach(function (it) {
-      it.id = it.id || U.uid();
-      it.title = it.title || '(uden titel)';
-      it.type = it.type === 'event' ? 'event' : 'task';
-      it.assignee = ['a', 'b', 'shared'].indexOf(it.assignee) >= 0 ? it.assignee : 'shared';
-      it.date = it.date || '';
-      it.time = it.time || '';
-      it.repeat = it.repeat || 'none';
-      it.priority = it.priority || 'normal';
-      it.done = !!it.done;
-      it.completed = it.completed && typeof it.completed === 'object' ? it.completed : {};
-      it.notes = it.notes || '';
-      it.createdAt = it.createdAt || Date.now();
-    });
-    data.shopping = Array.isArray(data.shopping) ? data.shopping : [];
-    data.shopping.forEach(function (s) {
-      s.id = s.id || U.uid();
-      s.title = s.title || '';
-      s.done = !!s.done;
-      s.createdAt = s.createdAt || Date.now();
-    });
-    return data;
+    return {
+      version: 1,
+      people: normalizePeople(data.people),
+      items: (Array.isArray(data.items) ? data.items : []).map(normalizeItem),
+      shopping: (Array.isArray(data.shopping) ? data.shopping : []).map(normalizeShopping)
+    };
   }
 
   function save() {
@@ -128,6 +262,7 @@
     };
     Object.keys(patch || {}).forEach(function (k) { item[k] = patch[k]; });
     state.items.push(item);
+    touch('item', item.id);
     notify();
     return item;
   }
@@ -144,12 +279,14 @@
     if (!item) return null;
     Object.keys(patch).forEach(function (k) { item[k] = patch[k]; });
     if (item.repeat === 'none') item.completed = {};
+    touch('item', id);
     notify();
     return item;
   }
 
   function deleteItem(id) {
     state.items = state.items.filter(function (it) { return it.id !== id; });
+    touch('item', id);
     notify();
   }
 
@@ -164,6 +301,7 @@
     } else {
       item.completed[dateISO] = true;
     }
+    touch('item', id);
     notify();
   }
 
@@ -253,21 +391,26 @@
   /* ---------- Indkøbsliste ---------- */
 
   function addShopping(title) {
-    state.shopping.push({ id: U.uid(), title: title, done: false, createdAt: Date.now() });
+    var row = { id: U.uid(), title: title, done: false, createdAt: Date.now() };
+    state.shopping.push(row);
+    touch('shopping', row.id);
     notify();
   }
 
   function toggleShopping(id) {
     state.shopping.forEach(function (s) { if (s.id === id) s.done = !s.done; });
+    touch('shopping', id);
     notify();
   }
 
   function deleteShopping(id) {
     state.shopping = state.shopping.filter(function (s) { return s.id !== id; });
+    touch('shopping', id);
     notify();
   }
 
   function clearDoneShopping() {
+    state.shopping.forEach(function (s) { if (s.done) touch('shopping', s.id); });
     state.shopping = state.shopping.filter(function (s) { return !s.done; });
     notify();
   }
@@ -279,7 +422,8 @@
   }
 
   function setPeople(people) {
-    state.people = people;
+    state.people = normalizePeople(people);
+    touch('meta', 'people');
     notify();
   }
 
@@ -289,12 +433,16 @@
 
   function importJSON(text) {
     var data = JSON.parse(text);
+    var previous = recordKeys();
     state = migrate(data);
+    markAllDirty(previous);
     notify();
   }
 
   function reset() {
+    var previous = recordKeys();
     state = defaultState();
+    markAllDirty(previous);
     notify();
   }
 
@@ -321,6 +469,11 @@
     clearDoneShopping: clearDoneShopping,
     person: person,
     setPeople: setPeople,
+    isDirty: isDirty,
+    hasPending: function () { return Object.keys(dirty).length > 0; },
+    pendingChanges: pendingChanges,
+    clearPending: clearPending,
+    applyRemote: applyRemote,
     exportJSON: exportJSON,
     importJSON: importJSON,
     reset: reset

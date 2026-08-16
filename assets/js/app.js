@@ -421,10 +421,39 @@
     }
   });
 
+  /* ---------- Synkroniseringsstatus i topbaren ---------- */
+
+  var syncBadge = U.$('#syncStatus');
+
+  function paintSync() {
+    var s = global.Sync.state();
+    syncBadge.textContent = global.Sync.label();
+    syncBadge.className = 'sync is-' + s.status;
+    syncBadge.hidden = s.status === 'disabled';
+  }
+
+  U.on(root, 'click', '#syncNow', function () {
+    if (global.Sync.state().status === 'auth') {
+      global.location.reload();
+      return;
+    }
+    global.Sync.sync({ force: true }).then(function (ok) {
+      toast(ok ? 'Synkroniseret' : 'Kunne ikke få forbindelse — ændringerne er gemt lokalt');
+      App.render();
+    });
+  });
+
   /* ---------- Start ---------- */
 
   Store.load();
   loadUI();
-  Store.subscribe(function () { App.render(); });
+  Store.subscribe(function () { App.render(); paintSync(); });
+  global.Sync.onStatusChange(function () {
+    paintSync();
+    if (App.view === 'settings') App.render();
+  });
   App.render();
+  global.Sync.start();
+  paintSync();
+  setInterval(paintSync, 60000);
 })(window);

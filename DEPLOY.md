@@ -10,7 +10,7 @@ gratis: Access' gratisplan dækker op til 50 brugere, og I skal bruge to.
 Login sker med en **engangskode på mail** — I skal altså ikke oprette konti eller
 huske et kodeord. Man skriver sin mailadresse, får en 6-cifret kode og er inde.
 
-Regn med 15-20 minutter første gang.
+Regn med 20-30 minutter første gang.
 
 ---
 
@@ -75,7 +75,61 @@ den skal blive afvist.
 
 ---
 
-## Trin 3 — Gem den på hjemmeskærmen
+## Trin 3 — Slå synkronisering til
+
+Uden dette trin virker siden fint, men hver enhed har sin egen plan. Med det deler
+I én fælles plan. Data ligger i en Cloudflare D1-database (SQLite) og hentes af den
+lille funktion i `functions/api/sync.js`, som Pages selv finder og kører på
+`/api/sync`. Fordi Access sidder foran hele domænet, er API'et beskyttet af samme
+login — der skal ikke sættes brugerstyring op.
+
+Gratisplanen dækker rigeligt: 5 GB database og 100.000 kald om dagen, hvor I skal
+bruge nogle få hundrede.
+
+### 3a. Opret databasen
+
+I dashboardet: **Storage & Databases → D1 SQL Database → Create Database**.
+Kald den `familieplan`.
+
+Åbn databasen, vælg fanen **Console**, indsæt hele indholdet af `schema.sql` fra
+repoet, og kør det. Det laver den ene tabel, der skal bruges.
+
+> Foretrækker du kommandolinjen:
+> ```bash
+> npx wrangler d1 create familieplan
+> npx wrangler d1 execute familieplan --remote --file=schema.sql
+> ```
+
+### 3b. Bind databasen til siden
+
+Gå til Pages-projektet → **Settings → Bindings → Add → D1 database**:
+
+| Felt | Værdi |
+| --- | --- |
+| Variable name | `DB` — præcis dette navn, det er sådan koden finder databasen |
+| D1 database | `familieplan` |
+
+Tilføj bindingen for både **Production** og **Preview**, hvis begge dele er i brug.
+
+### 3c. Udrul igen
+
+Bindinger slår først igennem ved næste udrulning: **Deployments → … → Retry
+deployment**, eller push en ny commit.
+
+### 3d. Tjek at det virker
+
+Åbn siden. Øverst til højre skal der stå **“Synkroniseret”** med en grøn prik.
+Under *Indstillinger → Synkronisering* kan I trykke **Synkronisér nu** og se status.
+
+Prøv så det rigtige: opret en opgave på din telefon, og se den dukke op på din
+kones inden for et halvt minut.
+
+Står der **“Kun på denne enhed”**, er databasen ikke bundet endnu, eller siden er
+ikke udrullet igen efter bindingen blev lavet.
+
+---
+
+## Trin 4 — Gem den på hjemmeskærmen
 
 - **iPhone/iPad:** åbn adressen i Safari → Del-knappen → *Føj til hjemmeskærm*.
 - **Android:** åbn i Chrome → menuen (⋮) → *Føj til startskærm*.
@@ -86,12 +140,18 @@ Med en session på en måned skal I kun logge ind ca. én gang om måneden pr. e
 
 ## Godt at vide
 
-**Data følger enheden, ikke logindet.** Login styrer, *hvem der må åbne siden* —
-det synkroniserer ikke jeres planer. Punkterne ligger stadig i browserens
-localStorage på hver enkelt enhed, så din telefon og din kones telefon har hver
-sin plan. Brug **Indstillinger → Eksportér/Importér** til at flytte data imellem
-dem. Vil I have automatisk synkronisering, kræver det en backend (fx Cloudflare
-D1, Supabase eller Firebase) — sig til, hvis det bliver aktuelt.
+**Sådan opfører synkroniseringen sig.** Appen skriver altid lokalt først, så den
+virker uden net — i toget, i sommerhuset. Ændringer sendes et sekund efter de
+sker, og der hentes nyt fra den anden enhed hvert halve minut, samt hver gang I
+skifter tilbage til fanen. Er I offline, hober ændringerne sig op og bliver sendt,
+når nettet er tilbage; statusfeltet øverst siger *“Offline — gemt lokalt”*.
+
+**Ved samtidige rettelser vinder den sidste.** Retter I det samme punkt på hver
+jeres telefon inden for samme minut, overlever den ændring der når frem sidst.
+Forskellige punkter påvirker aldrig hinanden, så i praksis mærker I det ikke.
+
+**Eksporten er stadig værd at bruge.** Den er jeres sikkerhedskopi, hvis en række
+skulle blive slettet ved et uheld — databasen har ikke nogen fortrydelsesknap.
 
 **Eget domæne.** Har I et domæne i forvejen, kan I sætte det på under
 *Pages → Custom domains* og bruge det i Access-appen i stedet for `pages.dev`.

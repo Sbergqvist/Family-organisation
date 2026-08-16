@@ -19,6 +19,43 @@
       '</div>';
   }
 
+  /* Status for synkronisering. Panelet skifter tekst efter hvad der faktisk sker. */
+  function syncPanel() {
+    var sync = global.Sync.state();
+
+    if (!sync.enabled) {
+      return '<section class="panel">' +
+        '<h3 class="panel__title">Synkronisering</h3>' +
+        '<p class="panel__hint">Slået fra. Siden kører kun lokalt på denne enhed — enten fordi den er ' +
+          'åbnet som en fil, eller fordi der ikke er sat en database op. Se DEPLOY.md for opsætningen.</p>' +
+        '</section>';
+    }
+
+    if (sync.status === 'auth') {
+      return '<section class="panel">' +
+        '<h3 class="panel__title">Synkronisering</h3>' +
+        '<p class="panel__stats"><span class="sync is-auth">Log ind igen</span></p>' +
+        '<p class="panel__hint">Jeres Cloudflare-session er udløbet. Genindlæs siden, så kommer ' +
+          'loginskærmen frem. Ændringer lavet i mellemtiden ligger stadig gemt lokalt.</p>' +
+        '<div class="btn-row"><button class="btn btn--primary" type="button" id="syncNow">Genindlæs og log ind</button></div>' +
+        '</section>';
+    }
+
+    var pending = sync.pending
+      ? '<p class="panel__hint">Der ligger ændringer klar til at blive sendt.</p>'
+      : '';
+
+    return '<section class="panel">' +
+      '<h3 class="panel__title">Synkronisering</h3>' +
+      '<p class="panel__stats"><span class="sync is-' + sync.status + '">' +
+        U.escapeHtml(global.Sync.label()) + '</span></p>' +
+      '<p class="panel__hint">Ændringer sendes automatisk, og der hentes nyt fra den anden enhed ' +
+        'hvert halve minut. Er I offline, gemmes alt lokalt og sendes når nettet er tilbage.</p>' +
+      pending +
+      '<div class="btn-row"><button class="btn" type="button" id="syncNow">Synkronisér nu</button></div>' +
+      '</section>';
+  }
+
   function render() {
     var s = global.Store.state;
     return '' +
@@ -33,10 +70,13 @@
           '<button class="btn btn--primary" type="button" id="savePeople">Gem navne og farver</button>' +
         '</section>' +
 
+        syncPanel() +
+
         '<section class="panel">' +
           '<h3 class="panel__title">Data</h3>' +
-          '<p class="panel__hint">Alt gemmes lokalt i denne browser — der sendes ingenting til en server. ' +
-            'Vil I dele planen mellem to enheder, så eksportér filen og importér den på den anden enhed.</p>' +
+          '<p class="panel__hint">Planen ligger altid i denne browser, så appen virker uden net. ' +
+            'Er synkronisering slået til, deles den desuden med jeres andre enheder. ' +
+            'Eksporten er jeres sikkerhedskopi.</p>' +
           '<p class="panel__stats">' + s.items.length + ' punkter · ' + s.shopping.length + ' varer på indkøbslisten</p>' +
           '<div class="btn-row">' +
             '<button class="btn" type="button" id="exportData">Eksportér som fil</button>' +

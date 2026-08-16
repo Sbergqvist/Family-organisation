@@ -3,8 +3,9 @@
 En lille hjemmeside til at planlægge ugen og måneden for to personer — med opgaver,
 aftaler, to-do-lister og en fælles indkøbsliste.
 
-Siden er ren HTML, CSS og JavaScript. Der er ingen server, ingen konto og ingen
-byggeproces: åbn `index.html`, og den virker.
+Siden er ren HTML, CSS og JavaScript uden byggeproces: åbn `index.html`, og den
+virker. Lægges den på Cloudflare Pages, kan den desuden synkronisere planen mellem
+jeres enheder og lukkes af med login — se [DEPLOY.md](DEPLOY.md).
 
 ## Hvad kan den?
 
@@ -60,27 +61,51 @@ men den slags sider er altid offentligt tilgængelige for enhver med adressen.
 
 ## Hvor gemmes data?
 
-Alt gemmes i browserens `localStorage` på den enhed, I bruger. Det betyder:
+Appen skriver altid til browserens `localStorage` først. Derfor virker den uden
+net, og derfor er den hurtig. Oven på det ligger et valgfrit synkroniseringslag.
 
-- Ingen data forlader jeres enhed. Selv hvis siden ligger på en offentlig adresse,
-  ser fremmede kun en tom plan — jeres punkter findes kun lokalt hos jer.
-- **Planen synkroniserer ikke automatisk mellem to enheder.** Under *Indstillinger* kan I
-  eksportere alt til en JSON-fil og importere den på den anden enhed.
-- Rydder man browserens websteds-data, forsvinder planen — tag en eksport nu og da.
+**Uden synkronisering** (åbnet som fil, eller hosting uden database) er planen ren
+lokal: den findes kun på den enhed, og I flytter data med *Indstillinger →
+Eksportér/Importér*. Statusfeltet øverst siger “Kun på denne enhed”.
 
-Vil I have rigtig synkronisering mellem telefoner, kræver det en lille backend
-(fx Firebase eller Supabase). Det er det næste naturlige skridt, hvis fil-eksporten
-bliver for besværlig i hverdagen.
+**Med synkronisering** ([DEPLOY.md](DEPLOY.md) trin 3) deler I én fælles plan:
+
+- Ændringer sendes ca. et sekund efter de sker, og der hentes nyt hvert halve
+  minut samt hver gang I skifter tilbage til fanen.
+- Er I offline, gemmes ændringerne lokalt og sendes når nettet er tilbage.
+- Sletninger sendes som gravsten, så et slettet punkt også forsvinder hos den anden.
+- Retter I det *samme* punkt samtidig, vinder den ændring der når frem sidst.
+  Forskellige punkter kan aldrig ødelægge hinanden.
+
+Eksporten er stadig jeres sikkerhedskopi — tag en nu og da.
 
 ## Filer
 
 ```
-index.html            Side og dialog
-_headers              Sikkerhedsheaders til Cloudflare Pages
-assets/styles.css     Tema, layout og responsivt design
-assets/js/utils.js    Dato- og DOM-hjælpefunktioner
-assets/js/store.js    Datamodel, lagring og gentagelses-logik
-assets/js/render.js   Fælles opmærkning for kort
-assets/js/views/      Én fil pr. visning: uge, måned, to-do, indkøb, indstillinger
-assets/js/app.js      Navigation, dialog, træk-og-slip, genveje
+index.html               Side og dialog
+_headers                 Sikkerhedsheaders til Cloudflare Pages
+assets/styles.css        Tema, layout og responsivt design
+assets/js/utils.js       Dato- og DOM-hjælpefunktioner
+assets/js/store.js       Datamodel, lagring, gentagelser og ændringssporing
+assets/js/render.js      Fælles opmærkning for kort
+assets/js/views/         Én fil pr. visning: uge, måned, to-do, indkøb, indstillinger
+assets/js/sync.js        Synkronisering mod /api/sync
+assets/js/app.js         Navigation, dialog, træk-og-slip, genveje
+functions/api/sync.js    Serverdelen (Cloudflare Pages Function)
+schema.sql               Databasetabellen til D1
+wrangler.toml            Cloudflare-opsætning til kommandolinjen
+```
+
+### Kort om synkroniseringen
+
+Hvert punkt, hver indkøbsvare og indstillingerne er én række med et tidsstempel.
+Klienten husker hvilke rækker den har ændret, og hvornår den sidst hentede. Ved
+hver synkronisering sender den de ændrede rækker og beder om alt, der er nyere end
+dens tidsstempel. Serveren sætter selv tidsstemplerne, så to enheder med forskelligt
+indstillet ur ikke kan overskrive hinanden i forkert rækkefølge.
+
+Kør hele stakken lokalt med API og database:
+
+```bash
+npx wrangler pages dev
 ```
