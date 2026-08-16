@@ -194,6 +194,61 @@ ikke udrullet igen efter bindingen blev lavet.
 
 ---
 
+## Alternativ til Access: én fælles adgangskode
+
+Er Cloudflare Access for besværligt, kan siden i stedet lukkes med en adgangskode,
+I to deler. Det kræver hverken Zero Trust eller betalingskort, og virker på fem
+minutter. I kan også bruge begge dele på én gang.
+
+Koden tjekkes **på serveren**, før noget som helst udleveres — også de statiske
+filer og `/api/sync`. Der er altså ikke tale om en skærm, man kan klikke forbi
+eller finde koden bag i sidens kildekode.
+
+### Sæt adgangskoden
+
+Pages-projektet → **Settings → Variables and Secrets → Add**:
+
+| Felt | Værdi |
+| --- | --- |
+| Type | **Secret** (så koden ikke kan læses igen bagefter) |
+| Variable name | `APP_PASSWORD` |
+| Value | jeres fælles adgangskode |
+
+Tilføj den under **Production** (og **Preview**, hvis I bruger preview-adresser),
+og udrul igen: **Deployments → … → Retry deployment**.
+
+Vælg en kode, I kan sige til hinanden, men som ikke kan gættes — fire tilfældige ord
+er både nemmere at huske og sværere at gætte end `Sommer2026!`.
+
+### Bremsen på gætteri
+
+Efter 10 forkerte forsøg fra samme IP-adresse afvises flere forsøg i et kvarter.
+Det kræver en ekstra tabel i databasen — kør denne i D1-konsollen:
+
+```sql
+CREATE TABLE IF NOT EXISTS login_attempts (
+  ip       TEXT    PRIMARY KEY,
+  count    INTEGER NOT NULL DEFAULT 0,
+  reset_at INTEGER NOT NULL
+);
+```
+
+Springer I den over, virker logindet stadig — så tælles forsøgene bare ikke.
+
+### Godt at vide
+
+- **Uden `APP_PASSWORD` er siden åben.** Det er med vilje: så kan man ikke låse sig
+  selv ude, og appen kan stadig åbnes som en almindelig fil fra din computer.
+- **I forbliver logget ind i 30 dage** pr. enhed. Vil I ud før tid, så gå til
+  `/logout` — fx `https://familieplan.pages.dev/logout`.
+- **Skifter I adgangskode, ryger alle sessioner.** Signaturen på cookien laves med
+  koden som nøgle, så gamle sessioner bliver ugyldige med det samme. Det er også
+  måden at smide en gammel enhed ud på.
+- **Cookien kan ikke forfalskes** og kan ikke læses af JavaScript (HttpOnly, Secure,
+  SameSite=Lax).
+
+---
+
 ## Trin 4 — Gem den på hjemmeskærmen
 
 - **iPhone/iPad:** åbn adressen i Safari → Del-knappen → *Føj til hjemmeskærm*.

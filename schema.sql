@@ -16,3 +16,11 @@ CREATE TABLE IF NOT EXISTS records (
 
 -- Klienterne henter altid "alt nyere end mit sidste tidsstempel".
 CREATE INDEX IF NOT EXISTS idx_records_updated ON records (updated_at);
+
+-- Bremse på gætteri af adgangskoden. Bruges kun hvis siden er beskyttet med
+-- APP_PASSWORD; mangler tabellen, springes tællingen bare over.
+CREATE TABLE IF NOT EXISTS login_attempts (
+  ip       TEXT    PRIMARY KEY,
+  count    INTEGER NOT NULL DEFAULT 0,
+  reset_at INTEGER NOT NULL
+);

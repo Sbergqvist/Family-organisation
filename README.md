@@ -56,6 +56,10 @@ login foran. Begge dele er gratis, og kun de mailadresser I skriver på listen, 
 åbne siden — man logger ind med en engangskode på mail. Derefter kan I gemme siden
 på hjemmeskærmen på hver jeres telefon.
 
+Vil I hellere nøjes med én fælles adgangskode end Cloudflare Access, kan siden
+lukkes med miljøvariablen `APP_PASSWORD` — se afsnittet om adgangskode i DEPLOY.md.
+Koden tjekkes på serveren, før noget udleveres.
+
 GitHub Pages virker også (**Settings → Pages** → *Deploy from a branch*, mappe `/ (root)`),
 men den slags sider er altid offentligt tilgængelige for enhver med adressen.
 
@@ -91,6 +95,7 @@ assets/js/render.js      Fælles opmærkning for kort
 assets/js/views/         Én fil pr. visning: uge, måned, to-do, indkøb, indstillinger
 assets/js/sync.js        Synkronisering mod /api/sync
 assets/js/app.js         Navigation, dialog, træk-og-slip, genveje
+functions/_middleware.js Adgangskode foran hele siden (valgfri)
 functions/api/sync.js    Serverdelen (Cloudflare Pages Function)
 schema.sql               Databasetabellen til D1
 wrangler.toml            Cloudflare-opsætning til kommandolinjen
