@@ -98,7 +98,6 @@ assets/js/app.js         Navigation, dialog, træk-og-slip, genveje
 functions/_middleware.js Adgangskode foran hele siden (valgfri)
 functions/api/sync.js    Serverdelen (Cloudflare Pages Function)
 schema.sql               Databasetabellen til D1
-wrangler.toml            Cloudflare-opsætning til kommandolinjen
 ```
 
 ### Kort om synkroniseringen
@@ -112,5 +111,9 @@ indstillet ur ikke kan overskrive hinanden i forkert rækkefølge.
 Kør hele stakken lokalt med API og database:
 
 ```bash
-npx wrangler pages dev
+npx wrangler pages dev . --d1=DB=familieplan
 ```
+
+Konfigurationen ligger med vilje kun i Cloudflare-dashboardet. Lægger man en
+`wrangler.toml` i repoet, bliver den sandheden om projektet, og bindingerne fra
+dashboardet bliver tilsidesat.

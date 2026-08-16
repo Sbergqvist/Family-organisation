@@ -164,6 +164,10 @@ repoet, og kør det. Det laver den ene tabel, der skal bruges.
 > npx wrangler d1 create familieplan
 > npx wrangler d1 execute familieplan --remote --file=schema.sql
 > ```
+>
+> Bind den derefter i dashboardet som beskrevet nedenfor. Undgå at lægge en
+> `wrangler.toml` i repoet: findes den, tilsidesætter den bindingerne fra
+> dashboardet.
 
 ### 3b. Bind databasen til siden
 
@@ -191,6 +195,38 @@ kones inden for et halvt minut.
 
 Står der **“Kun på denne enhed”**, er databasen ikke bundet endnu, eller siden er
 ikke udrullet igen efter bindingen blev lavet.
+
+---
+
+## Når byggeriet fejler
+
+**“Missing entry-point to Worker script or to assets directory”** med
+`npx wrangler deploy` i loggen: projektet kører Workers-kommandoen på et
+Pages-projekt. `wrangler deploy` forventer et Worker-script; det her er en
+Pages-side med en `functions/`-mappe.
+
+Gå til projektets byggeindstillinger (**Settings → Build**) og ret:
+
+| Felt | Værdi |
+| --- | --- |
+| Build command | *(tom)* |
+| Deploy command | *(tom)* — der er ingen byggeproces at køre |
+| Build output directory | `/` |
+
+Kan feltet **Deploy command** ikke stå tomt, så skriv i stedet:
+
+```
+npx wrangler pages deploy . --project-name=familieplan
+```
+
+Bemærk `pages` i midten. Det er hele forskellen: `wrangler deploy` udruller en
+Worker, `wrangler pages deploy` udruller en Pages-side med dens funktioner.
+
+Kør derefter **Deployments → … → Retry deployment**.
+
+> Ser du slet ikke et felt til *Build output directory*, men kun byggekommandoer,
+> er projektet oprettet som et Workers-projekt og ikke et Pages-projekt. Så skal
+> koden struktureres anderledes — sig til, hvis det er tilfældet.
 
 ---
 
