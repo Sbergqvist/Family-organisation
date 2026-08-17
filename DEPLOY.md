@@ -241,6 +241,21 @@ Kør derefter **Deployments → … → Retry deployment**.
 
 ---
 
+### Selvtjek: `/api/status`
+
+Åbn **`<din-adresse>/api/status`**. Den svarer med tre ja/nej — og røber intet
+andet — så I kan se, hvad den kørende udgave faktisk har fået fat i:
+
+```json
+{ "functions": true, "database": true, "password": true }
+```
+
+| Felt | `false` betyder |
+| --- | --- |
+| `functions` | Svarer siden slet ikke med JSON, kører `functions/` ikke — se nedenfor |
+| `database` | D1-bindingen mangler. Den skal hedde præcis `DB` (databasens eget navn er ligegyldigt) |
+| `password` | `APP_PASSWORD` er ikke nået frem: forkert stavet, sat under Preview i stedet for Production, eller ikke udrullet igen bagefter |
+
 ### Siden virker, men beder ikke om adgangskode — og synkroniserer ikke
 
 Så kører `functions/`-mappen ikke. Symptomerne følges ad, fordi begge dele er

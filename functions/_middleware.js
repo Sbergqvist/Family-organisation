@@ -25,6 +25,16 @@ export async function onRequest(context) {
 
   if (url.pathname === '/logout') return logout();
 
+  /* Lille selvtjek til opsætningen. Svarer altid — også før man er logget ind —
+     og røber intet ud over om tingene er koblet på. */
+  if (url.pathname === '/api/status') {
+    return json({
+      functions: true,
+      database: !!env.DB,
+      password: !!env.APP_PASSWORD
+    }, 200);
+  }
+
   const password = env.APP_PASSWORD;
   if (!password) return next();
 
