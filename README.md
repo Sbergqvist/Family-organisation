@@ -3,8 +3,8 @@
 En lille hjemmeside til at planlægge ugen og måneden for to personer — med opgaver,
 aftaler, to-do-lister og en fælles indkøbsliste.
 
-Siden er ren HTML, CSS og JavaScript uden byggeproces: åbn `index.html`, og den
-virker. Lægges den på Cloudflare Pages, kan den desuden synkronisere planen mellem
+Siden er ren HTML, CSS og JavaScript uden byggeproces: åbn `public/index.html`,
+og den virker. Lægges den på Cloudflare Pages, kan den desuden synkronisere planen mellem
 jeres enheder og lukkes af med login — se [DEPLOY.md](DEPLOY.md).
 
 ## Hvad kan den?
@@ -42,10 +42,10 @@ Andre detaljer:
 
 ## Sådan bruger I den
 
-Dobbeltklik på `index.html`, eller kør en lille lokal server:
+Dobbeltklik på `public/index.html`, eller kør en lille lokal server:
 
 ```bash
-npx http-server -p 8000
+npx http-server public -p 8000
 # åbn http://localhost:8000
 ```
 
@@ -85,19 +85,23 @@ Eksporten er stadig jeres sikkerhedskopi — tag en nu og da.
 
 ## Filer
 
+Alt der udstilles ligger i `public/`. Koden der kører på serveren ligger i
+`functions/` — bevidst uden for `public/`, ellers ville Cloudflare Pages
+udstille den som almindelige filer i stedet for at køre den.
+
 ```
-index.html               Side og dialog
-_headers                 Sikkerhedsheaders til Cloudflare Pages
-assets/styles.css        Tema, layout og responsivt design
-assets/js/utils.js       Dato- og DOM-hjælpefunktioner
-assets/js/store.js       Datamodel, lagring, gentagelser og ændringssporing
-assets/js/render.js      Fælles opmærkning for kort
-assets/js/views/         Én fil pr. visning: uge, måned, to-do, indkøb, indstillinger
-assets/js/sync.js        Synkronisering mod /api/sync
-assets/js/app.js         Navigation, dialog, træk-og-slip, genveje
-functions/_middleware.js Adgangskode foran hele siden (valgfri)
-functions/api/sync.js    Serverdelen (Cloudflare Pages Function)
-schema.sql               Databasetabellen til D1
+public/index.html               Side og dialog
+public/_headers                 Sikkerhedsheaders til Cloudflare Pages
+public/assets/styles.css        Tema, layout og responsivt design
+public/assets/js/utils.js       Dato- og DOM-hjælpefunktioner
+public/assets/js/store.js       Datamodel, lagring, gentagelser og ændringssporing
+public/assets/js/render.js      Fælles opmærkning for kort
+public/assets/js/views/         Én fil pr. visning: uge, måned, to-do, indkøb, indstillinger
+public/assets/js/sync.js        Synkronisering mod /api/sync
+public/assets/js/app.js         Navigation, dialog, træk-og-slip, genveje
+functions/_middleware.js        Adgangskode foran hele siden (valgfri)
+functions/api/sync.js           Serverdelen (Cloudflare Pages Function)
+schema.sql                      Databasetabellen til D1
 ```
 
 ### Kort om synkroniseringen
@@ -111,7 +115,7 @@ indstillet ur ikke kan overskrive hinanden i forkert rækkefølge.
 Kør hele stakken lokalt med API og database:
 
 ```bash
-npx wrangler pages dev . --d1=DB=familieplan
+npx wrangler pages dev public --d1=DB=familieplan
 ```
 
 Konfigurationen ligger med vilje kun i Cloudflare-dashboardet. Lægger man en

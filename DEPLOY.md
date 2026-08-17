@@ -40,7 +40,7 @@ Regn med 20-30 minutter første gang.
    | Production branch | `claude/weekly-planning-website-wykytg` (eller `main`, hvis I fletter derover) |
    | Framework preset | `None` |
    | Build command | *(lad feltet stå tomt)* |
-   | Build output directory | `/` |
+   | Build output directory | `public` |
 
 5. Klik **Save and Deploy**. Efter ca. et minut har I en adresse i stil med
    `https://familieplan.pages.dev`.
@@ -222,7 +222,7 @@ Gå til projektets byggeindstillinger (**Settings → Build**) og ret:
 | --- | --- |
 | Build command | *(tom)* |
 | Deploy command | *(tom)* — der er ingen byggeproces at køre |
-| Build output directory | `/` |
+| Build output directory | `public` |
 
 Kan feltet **Deploy command** ikke stå tomt, så skriv i stedet:
 
@@ -238,6 +238,27 @@ Kør derefter **Deployments → … → Retry deployment**.
 > Ser du slet ikke et felt til *Build output directory*, men kun byggekommandoer,
 > er projektet oprettet som et Workers-projekt og ikke et Pages-projekt. Så skal
 > koden struktureres anderledes — sig til, hvis det er tilfældet.
+
+---
+
+### Siden virker, men beder ikke om adgangskode — og synkroniserer ikke
+
+Så kører `functions/`-mappen ikke. Symptomerne følges ad, fordi begge dele er
+funktioner: ingen loginskærm, og statusfeltet siger “Kun på denne enhed”.
+
+Tjek **Build output directory** under *Settings → Build*. Den skal stå til
+**`public`**. Står den til `/`, uploader Pages hele repoet som statiske filer —
+inklusive `functions/`-mappen — og så bliver funktionerne aldrig kørt.
+
+Strukturen er:
+
+```
+public/     ← det der udstilles: index.html, assets/, _headers
+functions/  ← koden der kører på serveren; skal ligge UDEN FOR public/
+```
+
+Ret indstillingen og kør **Retry deployment**. Tjek derefter
+`<din-adresse>/api/sync?since=0`: svarer den med JSON, kører funktionerne.
 
 ---
 
