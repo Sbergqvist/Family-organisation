@@ -8,6 +8,11 @@
 <meta name="robots" content="noindex, nofollow">
 <meta name="theme-color" content="#3b6ea5">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🗓️</text></svg>">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="apple-touch-icon" href="/assets/icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Familieplan">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <link rel="stylesheet" href="assets/styles.css">
 </head>
 <body>
@@ -54,6 +59,7 @@
           <select class="input" name="type">
             <option value="task">Opgave</option>
             <option value="event">Aftale</option>
+            <option value="meal">Måltid</option>
           </select>
         </label>
         <label class="field">
@@ -66,6 +72,12 @@
         <label class="field">
           <span class="field__label">Dato</span>
           <input class="input" type="date" name="date">
+          <div class="quickdates">
+            <button class="quickdate" type="button" data-quickdate="0">I dag</button>
+            <button class="quickdate" type="button" data-quickdate="1">I morgen</button>
+            <button class="quickdate" type="button" data-quickdate="7">+1 uge</button>
+            <button class="quickdate" type="button" data-quickdate="none">Ingen</button>
+          </div>
         </label>
         <label class="field">
           <span class="field__label">Tidspunkt</span>

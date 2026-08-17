@@ -26,10 +26,10 @@
 
   function render() {
     var today = U.today();
-    var occ = global.App.applyFilter(
+    var occ = global.Store.withoutMeals(global.App.applyFilter(
       global.Store.occurrencesInRange(U.addDays(today, -LOOK_BACK), U.addDays(today, LOOK_AHEAD))
-    );
-    var undated = global.App.applyFilter(global.Store.undatedItems());
+    ));
+    var undated = global.Store.withoutMeals(global.App.applyFilter(global.Store.undatedItems()));
 
     if (!global.App.showDone) {
       occ = occ.filter(function (o) { return !o.done; });

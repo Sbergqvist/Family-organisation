@@ -25,6 +25,7 @@
     cursor: U.today(),
     filter: 'all',
     showDone: false,
+    editingMeal: null,   // datoen hvis madplan-feltet er åbent til skrivning
 
     /* Personfiltret er inkluderende: vælger man en person, følger fælles punkter med. */
     applyFilter: function (list) {
@@ -198,6 +199,11 @@
 
   U.on(modal, 'click', '[data-close]', function () { closeModal(); });
 
+  U.on(modal, 'click', '[data-quickdate]', function (e, el) {
+    var value = el.getAttribute('data-quickdate');
+    form.elements.date.value = value === 'none' ? '' : U.toISO(U.addDays(U.today(), Number(value)));
+  });
+
   /* ---------- Globale handlinger i visningerne ---------- */
 
   U.on(root, 'click', '[data-nav]', function (e, el) {
@@ -233,6 +239,41 @@
   U.on(root, 'click', '[data-addday]', function (e, el) {
     openModal(null, { date: el.getAttribute('data-addday') });
   });
+
+  /* ---------- Madplan ---------- */
+
+  U.on(root, 'click', '[data-meal-date]', function (e, el) {
+    App.editingMeal = el.getAttribute('data-meal-date');
+    App.render();
+    var input = U.$('[data-meal-input="' + App.editingMeal + '"]');
+    if (input) {
+      input.focus();
+      input.select();
+    }
+  });
+
+  U.on(root, 'keydown', '[data-meal-input]', function (e, el) {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      commitMeal(el);
+    } else if (e.key === 'Escape') {
+      App.editingMeal = null;
+      App.render();
+    }
+  });
+
+  /* Klikker man ved siden af, gemmes det skrevne frem for at kaste det væk.
+     Det skal være focusout og ikke blur — blur bobler ikke op til delegeringen. */
+  U.on(root, 'focusout', '[data-meal-input]', function (e, el) {
+    if (App.editingMeal) commitMeal(el);
+  });
+
+  function commitMeal(el) {
+    var date = el.getAttribute('data-meal-input');
+    App.editingMeal = null;
+    Store.setMeal(date, el.value);
+    App.render();
+  }
 
   /* Hurtig oprettelse direkte i en dagkolonne. */
   U.on(root, 'keydown', '[data-quickadd]', function (e, el) {
@@ -456,4 +497,13 @@
   global.Sync.start();
   paintSync();
   setInterval(paintSync, 60000);
+
+  /* Gør siden installérbar og brugbar uden net. Fejler den, kører appen videre. */
+  if ('serviceWorker' in navigator && global.location.protocol !== 'file:') {
+    global.addEventListener('load', function () {
+      navigator.serviceWorker.register('/sw.js').catch(function (err) {
+        console.warn('Kunne ikke registrere service worker:', err.message);
+      });
+    });
+  }
 })(window);

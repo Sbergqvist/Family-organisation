@@ -11,7 +11,7 @@ jeres enheder og lukkes af med login — se [DEPLOY.md](DEPLOY.md).
 
 | Visning | Indhold |
 | --- | --- |
-| **Uge** | Syv dagkolonner med ugenummer, hurtig oprettelse i hver dag og optælling af åbne punkter pr. person |
+| **Uge** | Syv dagkolonner med ugenummer, madplan, hurtig oprettelse i hver dag og optælling af åbne punkter pr. person |
 | **Måned** | Kalendergitter på computer, dagsliste på mobil |
 | **To-do** | Alt samlet og grupperet: Forfaldne, I dag, I morgen, Resten af ugen, Senere, Uden dato |
 | **Indkøb** | Fælles liste med afkrydsning og "ryd afkrydsede" |
@@ -19,6 +19,11 @@ jeres enheder og lukkes af med login — se [DEPLOY.md](DEPLOY.md).
 
 Andre detaljer:
 
+- **Madplan** — hver dag i ugevisningen har et felt til aftensmaden. Klik, skriv,
+  tryk Enter. Tom tekst fjerner retten igen. Måltider holdes ude af to-do-listen
+  og tælles ikke som opgaver.
+- **Installérbar** — læg den på hjemmeskærmen, så åbner den som en app med eget
+  ikon og uden browserlinje, og virker helt uden net.
 - **Opgaver og aftaler** — en aftale har typisk et tidspunkt, en opgave krydses af.
 - **Ansvarlig** — hvert punkt hører til person 1, person 2 eller "Fælles", og farven følger med overalt.
 - **Gentagelser** — dagligt, ugentligt, hver 2. uge, månedligt eller årligt. Faste ting som
@@ -91,6 +96,9 @@ udstille den som almindelige filer i stedet for at køre den.
 
 ```
 public/index.html               Side og dialog
+public/manifest.webmanifest     Gør den installérbar på hjemmeskærmen
+public/sw.js                    Service worker: offline og hurtig opstart
+public/assets/icons/            App-ikoner
 public/_headers                 Sikkerhedsheaders til Cloudflare Pages
 public/assets/styles.css        Tema, layout og responsivt design
 public/assets/js/utils.js       Dato- og DOM-hjælpefunktioner
@@ -103,6 +111,16 @@ functions/_middleware.js        Adgangskode foran hele siden (valgfri)
 functions/api/sync.js           Serverdelen (Cloudflare Pages Function)
 schema.sql                      Databasetabellen til D1
 ```
+
+### Kort om offline
+
+`sw.js` henter altid *sider* fra nettet først, så man aldrig ser en gammel udgave
+og en udløbet session sender én til loginskærmen som den skal. Kun når nettet
+svigter, bruges den gemte kopi. `/api/` og login cachelagres aldrig. Filerne
+(css og js) leveres fra cachen med det samme og opdateres i baggrunden.
+
+Ændrer man listen over filer i `sw.js`, så hæv `VERSION` i samme fil — så ryddes
+den gamle cache ved næste besøg.
 
 ### Kort om synkroniseringen
 

@@ -183,7 +183,7 @@
     return {
       id: it.id || U.uid(),
       title: String(it.title || '(uden titel)').slice(0, 200),
-      type: it.type === 'event' ? 'event' : 'task',
+      type: ['event', 'meal'].indexOf(it.type) >= 0 ? it.type : 'task',
       assignee: ['a', 'b', 'shared'].indexOf(it.assignee) >= 0 ? it.assignee : 'shared',
       date: it.date || '',
       time: it.time || '',
@@ -353,6 +353,38 @@
     };
   }
 
+  /* ---------- Madplan ---------- */
+
+  /* Aftensmaden for en dag. Der er højst én pr. dag. */
+  function mealOn(dateISO) {
+    for (var i = 0; i < state.items.length; i++) {
+      var it = state.items[i];
+      if (it.type === 'meal' && it.date === dateISO) return it;
+    }
+    return null;
+  }
+
+  /* Tom titel sletter dagens ret igen. */
+  function setMeal(dateISO, title) {
+    var existing = mealOn(dateISO);
+    title = (title || '').trim();
+
+    if (!title) {
+      if (existing) deleteItem(existing.id);
+      return null;
+    }
+    if (existing) return updateItem(existing.id, { title: title });
+    return newItem({ title: title, type: 'meal', assignee: 'shared', date: dateISO });
+  }
+
+  function isMeal(occurrence) {
+    return occurrence.item.type === 'meal';
+  }
+
+  function withoutMeals(list) {
+    return list.filter(function (o) { return o.item.type !== 'meal'; });
+  }
+
   function occurrencesOn(date) {
     var out = [];
     state.items.forEach(function (it) {
@@ -469,6 +501,10 @@
     clearDoneShopping: clearDoneShopping,
     person: person,
     setPeople: setPeople,
+    mealOn: mealOn,
+    setMeal: setMeal,
+    isMeal: isMeal,
+    withoutMeals: withoutMeals,
     isDirty: isDirty,
     hasPending: function () { return Object.keys(dirty).length > 0; },
     pendingChanges: pendingChanges,

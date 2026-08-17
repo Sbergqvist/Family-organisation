@@ -17,9 +17,25 @@
       U.MONTHS[r.to.getMonth()] + ' ' + r.to.getFullYear();
   }
 
+  /* Aftensmaden vises i sit eget felt, ikke som et kort blandt opgaverne.
+     Klikker man på den, bliver feltet til et skrivefelt. */
+  function mealSlot(iso) {
+    if (global.App.editingMeal === iso) {
+      var current = global.Store.mealOn(iso);
+      return '<input class="meal meal--edit" type="text" data-meal-input="' + iso + '"' +
+        ' value="' + U.escapeHtml(current ? current.title : '') + '"' +
+        ' placeholder="Hvad spiser vi?" aria-label="Aftensmad" maxlength="80">';
+    }
+    var meal = global.Store.mealOn(iso);
+    return '<button class="meal' + (meal ? '' : ' is-empty') + '" type="button" data-meal-date="' + iso + '">' +
+      '<span class="meal__icon" aria-hidden="true">🍽</span>' +
+      '<span class="meal__text">' + U.escapeHtml(meal ? meal.title : 'Aftensmad') + '</span>' +
+      '</button>';
+  }
+
   function dayColumn(date) {
     var iso = U.toISO(date);
-    var occ = global.App.applyFilter(global.Store.occurrencesOn(date));
+    var occ = global.Store.withoutMeals(global.App.applyFilter(global.Store.occurrencesOn(date)));
     var isToday = U.sameDay(date, U.today());
     var isWeekend = date.getDay() === 0 || date.getDay() === 6;
     var open = occ.filter(function (o) { return !o.done; }).length;
@@ -37,6 +53,7 @@
           '</div>' +
           (open ? '<span class="day__count" title="Åbne punkter">' + open + '</span>' : '') +
         '</header>' +
+        mealSlot(iso) +
         '<div class="day__list">' +
           (occ.length ? global.Render.cards(occ) : '<p class="day__empty">Ingen planer</p>') +
         '</div>' +
@@ -46,7 +63,7 @@
 
   function summary() {
     var r = range();
-    var all = global.Store.occurrencesInRange(r.from, r.to);
+    var all = global.Store.withoutMeals(global.Store.occurrencesInRange(r.from, r.to));
     var keys = ['a', 'b', 'shared'];
     var html = keys.map(function (k) {
       var mine = all.filter(function (o) { return o.item.assignee === k; });
