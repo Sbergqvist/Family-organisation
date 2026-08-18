@@ -9,11 +9,13 @@
  * 2. /api/ og login røres aldrig. Synkronisering og adgangskontrol skal tale
  *    med serveren hver gang — et cachet svar ville være direkte forkert.
  *
- * Filerne (css og js) leveres fra cachen med det samme og opdateres i baggrunden,
- * så appen åbner øjeblikkeligt og alligevel er ajour ved næste start.
+ * Det gælder også filerne: css og js hentes fra nettet når der er net, og fra
+ * cachen når der ikke er. Det koster nogle få hundrede millisekunder ved opstart,
+ * men til gengæld kan man aldrig ende med at køre ny HTML mod gammel kode — og
+ * dét er en langt værre oplevelse end et øjebliks ventetid.
  */
 
-const VERSION = 'familieplan-v1';
+const VERSION = 'familieplan-v2';
 const SHELL = [
   '/',
   '/index.html',
@@ -65,11 +67,7 @@ self.addEventListener('fetch', function (event) {
   if (url.origin !== self.location.origin) return;
   if (url.pathname.startsWith('/api/') || url.pathname === '/login' || url.pathname === '/logout') return;
 
-  if (request.mode === 'navigate') {
-    event.respondWith(networkFirst(request));
-    return;
-  }
-  event.respondWith(staleWhileRevalidate(request));
+  event.respondWith(networkFirst(request));
 });
 
 function networkFirst(request) {
@@ -86,19 +84,4 @@ function networkFirst(request) {
         return hit || caches.match('/index.html');
       });
     });
-}
-
-function staleWhileRevalidate(request) {
-  return caches.match(request).then(function (hit) {
-    const network = fetch(request)
-      .then(function (response) {
-        if (response && response.ok && response.type === 'basic') {
-          const copy = response.clone();
-          caches.open(VERSION).then(function (cache) { cache.put(request, copy); });
-        }
-        return response;
-      })
-      .catch(function () { return hit; });
-    return hit || network;
-  });
 }

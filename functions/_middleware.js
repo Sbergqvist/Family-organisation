@@ -31,7 +31,9 @@ export async function onRequest(context) {
     return json({
       functions: true,
       database: !!env.DB,
-      password: !!env.APP_PASSWORD
+      password: !!env.APP_PASSWORD,
+      commit: (env.CF_PAGES_COMMIT_SHA || '').slice(0, 7),
+      branch: env.CF_PAGES_BRANCH || ''
     }, 200);
   }
 

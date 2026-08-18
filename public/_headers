@@ -9,6 +9,12 @@
   Permissions-Policy: geolocation=(), camera=(), microphone=(), interest-cohort=()
   Content-Security-Policy: default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self'; form-action 'self'; frame-ancestors 'none'; base-uri 'none'
 
-# Selve appen må ikke caches hårdt, så rettelser slår igennem med det samme.
-/index.html
+# Filerne er små og har faste navne, så de skal valideres ved hvert besøg.
+# Ellers kan browseren køre ny HTML med gammel JavaScript efter en opdatering.
+# no-cache betyder "spørg først" — svarer serveren 304, bruges den gemte kopi.
+/*
+  Cache-Control: no-cache
+
+# Service workeren styrer alt det andet og skal aldrig selv være forældet.
+/sw.js
   Cache-Control: no-cache
